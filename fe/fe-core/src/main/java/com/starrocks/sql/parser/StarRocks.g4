@@ -145,12 +145,16 @@ statement
     | EXECUTE AS user (WITH NO REVERT)?                                                     #executeAs
     | ALTER USER user authOption                                                            #alterUser
     | CREATE USER (IF NOT EXISTS)? user authOption? (DEFAULT ROLE string)?                  #createUser
+    | DROP USER user                                                                        #dropUser
 
     // procedure
     | showProcedureStatement                                                                 #showProcedure
 
     // proc
     | showProcStatement                                                                      #showProc
+
+    // Backup Restore Satement
+    | backupStatement                                                                        #backup
     ;
 
 // ---------------------------------------- DataBase Statement ---------------------------------------------------------
@@ -362,7 +366,7 @@ showPartitionsStatement
     (WHERE expression)?
     (ORDER BY sortItem (',' sortItem)*)? limitElement?
     ;
-    
+
 showOpenTableStatement
     : SHOW OPEN TABLES
     ;
@@ -464,6 +468,7 @@ alterClause
     | dropComputeNodeClause
     | swapTableClause
     | dropPartitionClause
+    | truncatePartitionClause
     | modifyTablePropertiesClause
     | addPartitionClause
     | modifyPartitionClause
@@ -473,6 +478,7 @@ alterClause
     | modifyColumnClause
     | columnRenameClause
     | reorderColumnsClause
+    | modifyBrokerClause
     ;
 
 addPartitionClause
@@ -489,6 +495,10 @@ dropIndexClause
 
 dropPartitionClause
     : DROP TEMPORARY? PARTITION (IF EXISTS)? identifier FORCE?
+    ;
+
+truncatePartitionClause
+    : TRUNCATE partitionNames
     ;
 
 tableRenameClause
@@ -562,6 +572,13 @@ columnRenameClause
 reorderColumnsClause
     : ORDER BY identifierList (FROM rollupName=identifier)? properties?
     ;
+
+modifyBrokerClause
+    : ADD BROKER identifierOrString string (',' string)*
+    | DROP BROKER identifierOrString string (',' string)*
+    | DROP ALL BROKER identifierOrString
+    ;
+
 // ------------------------------------------- DML Statement -----------------------------------------------------------
 
 insertStatement
@@ -594,6 +611,7 @@ pauseRoutineLoadStatement
 
 showRoutineLoadStatement
     : SHOW ALL? ROUTINE LOAD (FOR (db=qualifiedName '.')? name=identifier)?
+        (FROM db=qualifiedName)?
         (WHERE expression)? (ORDER BY sortItem (',' sortItem)*)? (limitElement)?
     ;
 
@@ -798,9 +816,14 @@ setStatement
     ;
 
 setVar
-    : varType? identifier '=' setExprOrDefault
-    | AT identifierOrString '=' expression
-    | AT AT (varType '.')? identifier '=' setExprOrDefault
+    : (CHAR SET | CHARSET) (identifierOrString | DEFAULT)                                       #setNames
+    | NAMES (charset = identifierOrString | DEFAULT)
+        (COLLATE (collate = identifierOrString | DEFAULT))?                                     #setNames
+    | PASSWORD '=' (string | PASSWORD '(' string ')')                                           #setPassword
+    | PASSWORD FOR user '=' (string | PASSWORD '(' string ')')                                  #setPassword
+    | varType? identifier '=' setExprOrDefault                                                  #setVariable
+    | AT identifierOrString '=' expression                                                      #setVariable
+    | AT AT (varType '.')? identifier '=' setExprOrDefault                                      #setVariable
     ;
 
 setExprOrDefault
@@ -973,6 +996,14 @@ showProcedureStatement
 // ------------------------------------------- Proc Statement ---------------------------------------------------------
 showProcStatement
     : SHOW PROC path=string
+    ;
+
+// ---------------------------------------- Backup Restore Statement -----------------------------------------------------
+backupStatement
+    : BACKUP SNAPSHOT qualifiedName
+    TO identifier
+    ON '(' tableDesc (',' tableDesc) * ')'
+    (PROPERTIES propertyList)?
     ;
 
 // ------------------------------------------- Expression --------------------------------------------------------------
@@ -1175,6 +1206,10 @@ frameBound
     ;
 
 // ------------------------------------------- COMMON AST --------------------------------------------------------------
+
+tableDesc
+    : qualifiedName partitionNames?
+    ;
 
 explainDesc
     : (DESC | DESCRIBE | EXPLAIN) (LOGICAL | VERBOSE | COSTS)?

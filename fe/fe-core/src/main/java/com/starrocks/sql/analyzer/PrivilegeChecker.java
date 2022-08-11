@@ -11,6 +11,7 @@ import com.starrocks.analysis.AlterDatabaseRename;
 import com.starrocks.analysis.AlterSystemStmt;
 import com.starrocks.analysis.AlterTableStmt;
 import com.starrocks.analysis.AlterViewStmt;
+import com.starrocks.analysis.BackupStmt;
 import com.starrocks.analysis.CancelAlterTableStmt;
 import com.starrocks.analysis.CompoundPredicate;
 import com.starrocks.analysis.CreateDbStmt;
@@ -24,6 +25,7 @@ import com.starrocks.analysis.DropDbStmt;
 import com.starrocks.analysis.DropFunctionStmt;
 import com.starrocks.analysis.DropMaterializedViewStmt;
 import com.starrocks.analysis.DropTableStmt;
+import com.starrocks.analysis.DropUserStmt;
 import com.starrocks.analysis.InsertStmt;
 import com.starrocks.analysis.PauseRoutineLoadStmt;
 import com.starrocks.analysis.RecoverDbStmt;
@@ -472,6 +474,15 @@ public class PrivilegeChecker {
             if (!GlobalStateMgr.getCurrentState().getAuth()
                     .checkHasPriv(context, PrivPredicate.GRANT, Auth.PrivLevel.GLOBAL, Auth.PrivLevel.DATABASE)) {
                 ErrorReport.reportSemanticException(ErrorCode.ERR_SPECIFIC_ACCESS_DENIED_ERROR, "GRANT");
+            }
+            return null;
+        }
+
+        @Override
+        public Void visitDropUserStatement(DropUserStmt statement, ConnectContext context) {
+            // only user with GLOBAL level's GRANT_PRIV can drop user.
+            if (!GlobalStateMgr.getCurrentState().getAuth().checkGlobalPriv(context, PrivPredicate.GRANT)) {
+                ErrorReport.reportSemanticException(ErrorCode.ERR_SPECIFIC_ACCESS_DENIED_ERROR, "DROP USER");
             }
             return null;
         }
@@ -974,6 +985,17 @@ public class PrivilegeChecker {
             if (!GlobalStateMgr.getCurrentState().getAuth().checkDbPriv(session, db, PrivPredicate.SHOW)) {
                 ErrorReport.reportSemanticException(ErrorCode.ERR_DB_ACCESS_DENIED, session.getQualifiedUser(), db);
             }
+            return null;
+        }
+
+        @Override
+        public Void visitBackupStmt(BackupStmt statement, ConnectContext context) {
+            TableRef tableRef = statement.getTableRefs().get(0);
+            if (!GlobalStateMgr.getCurrentState().getAuth().checkDbPriv(ConnectContext.get(),
+                    tableRef.getName().getDb(), PrivPredicate.LOAD)) {
+                ErrorReport.reportSemanticException(ErrorCode.ERR_SPECIFIC_ACCESS_DENIED_ERROR, "LOAD");
+            }
+
             return null;
         }
 

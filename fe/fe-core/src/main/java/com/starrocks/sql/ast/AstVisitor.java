@@ -21,6 +21,7 @@ import com.starrocks.analysis.ArrayExpr;
 import com.starrocks.analysis.ArraySliceExpr;
 import com.starrocks.analysis.ArrowExpr;
 import com.starrocks.analysis.BackendClause;
+import com.starrocks.analysis.BackupStmt;
 import com.starrocks.analysis.BaseViewStmt;
 import com.starrocks.analysis.BetweenPredicate;
 import com.starrocks.analysis.BinaryPredicate;
@@ -51,6 +52,7 @@ import com.starrocks.analysis.DropIndexClause;
 import com.starrocks.analysis.DropMaterializedViewStmt;
 import com.starrocks.analysis.DropPartitionClause;
 import com.starrocks.analysis.DropTableStmt;
+import com.starrocks.analysis.DropUserStmt;
 import com.starrocks.analysis.ExistsPredicate;
 import com.starrocks.analysis.Expr;
 import com.starrocks.analysis.FrontendClause;
@@ -67,6 +69,7 @@ import com.starrocks.analysis.LimitElement;
 import com.starrocks.analysis.LiteralExpr;
 import com.starrocks.analysis.LoadStmt;
 import com.starrocks.analysis.ModifyBackendAddressClause;
+import com.starrocks.analysis.ModifyBrokerClause;
 import com.starrocks.analysis.ModifyColumnClause;
 import com.starrocks.analysis.ModifyFrontendAddressClause;
 import com.starrocks.analysis.ModifyPartitionClause;
@@ -115,6 +118,7 @@ import com.starrocks.analysis.SwapTableClause;
 import com.starrocks.analysis.SysVariableDesc;
 import com.starrocks.analysis.TableRenameClause;
 import com.starrocks.analysis.TimestampArithmeticExpr;
+import com.starrocks.analysis.TruncatePartitionClause;
 import com.starrocks.analysis.TruncateTableStmt;
 import com.starrocks.analysis.UpdateStmt;
 
@@ -443,6 +447,10 @@ public abstract class AstVisitor<R, C> {
         return visitStatement(statement, context);
     }
 
+    public R visitDropUserStatement(DropUserStmt statement, C context) {
+        return visitStatement(statement, context);
+    }
+
     public R visitRecoverPartitionStmt(RecoverPartitionStmt statement, C context) {
         return visitStatement(statement, context);
     }
@@ -466,6 +474,10 @@ public abstract class AstVisitor<R, C> {
     
     public R visitShowOpenTableStmt(ShowOpenTableStmt statement, C context) {
         return visitShowStatement(statement, context);
+    }
+
+    public R visitBackupStmt(BackupStmt statement, C context) {
+        return visitDDLStatement(statement, context);
     }
 
     // ------------------------------------------- Analyze Statement ---------------------------------------------------
@@ -562,6 +574,10 @@ public abstract class AstVisitor<R, C> {
         return visitNode(clause, context);
     }
 
+    public R visitTruncatePartitionClause(TruncatePartitionClause clause, C context) {
+        return visitNode(clause, context);
+    }
+
     public R visitModifyPartitionClause(ModifyPartitionClause clause, C context) {
         return visitNode(clause, context);
     }
@@ -591,6 +607,10 @@ public abstract class AstVisitor<R, C> {
     }
 
     public R visitReorderColumnsClause(ReorderColumnsClause clause, C context) {
+        return visitNode(clause, context);
+    }
+
+    public R visitModifyBrokerClause(ModifyBrokerClause clause, C context) {
         return visitNode(clause, context);
     }
 
